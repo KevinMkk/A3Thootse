@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>VR Travel App</title>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+
+        #unityCanvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+
+        #mapOverlay {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            height: 80%;
+            background: #111;
+            display: none;
+            z-index: 10;
+            border: 2px solid white;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.6);
+            padding: 6px;
+            font-family: Arial;
+        }
+    </style>
+</head>
+
+<body>
+
+<canvas id="unityCanvas"></canvas>
+
+<div id="mapOverlay">
+    <div id="map"></div>
+</div>
+
+<div id="instructions">
+    Esc = Mouse Unlock
+</div>
+
+<script src="Build/A3Thootse.loader.js"></script>
+<script src="map-bridge.js"></script>
+
+<script>
+// let unityInstance = null;
+let unityInstanceGlobal = null;
+
+// ================= UNITY INIT =================
+createUnityInstance(document.querySelector("#unityCanvas"), {
+    dataUrl: "Build/A3Thootse.data.unityweb",
+    frameworkUrl: "Build/A3Thootse.framework.js.unityweb",
+    codeUrl: "Build/A3Thootse.wasm.unityweb",
+    streamingAssetsUrl: "StreamingAssets",
+
+    companyName: "VRProject",
+    productName: "TravelApp",
+    productVersion: "1.0"
+
+}).then((instance) => {
+    // unityInstance = instance;
+    unityInstanceGlobal = instance;
+    console.log("✅ Unity Loaded");
+
+    if (window.setUnityInstance) {
+        window.setUnityInstance(instance);
+    }
+});
+
+// ================= UNITY CALLED FROM C# =================
+window.SendLocationsToJS = function(json) {
+    console.log("📩 Unity Bridge Received:", json);
+
+    if (window.handleLocationsFromUnity) {
+        window.handleLocationsFromUnity(json);
+    } else {
+        console.warn("⚠ handleLocationsFromUnity not ready yet");
+    }
+};
+
+function ShowMap() {
+    document.getElementById("mapOverlay").style.display = "block";
+}
+
+function HideMap() {
+    document.getElementById("mapOverlay").style.display = "none";
+}
+
+// ================= SEND SCENE TO UNITY =================
+function selectLocation(sceneName) {
+    if (!unityInstanceGlobal) return;
+
+    unityInstanceGlobal.SendMessage(
+        "SceneController",
+        "ReceiveSceneFromJS",
+        sceneName
+    );
+
+    HideMap();
+}
+</script>
+
+<!-- Google Maps -->
+<script async defer
+src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhHAQiDYWpabcPz_nOT-xp9N2gy9wbGEk&callback=initMap">
+</script>
+
+</body>
+</html>
